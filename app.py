@@ -8,26 +8,39 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.preprocessing import LabelEncoder
 
-# Load and preprocess data
+# 🔧 Load and preprocess data
 @st.cache_data
 def load_data():
+    # Load dataset
     data = pd.read_csv('improved_disease_dataset.csv')
+
+    # Encode target labels
     encoder = LabelEncoder()
     data["disease"] = encoder.fit_transform(data["disease"])
-    X = data.iloc[:, :-1]
-    y = data.iloc[:, -1]
 
+    # Separate features and target
+    X = data.drop("disease", axis=1)
+    y = data["disease"]
+
+    # Handle missing values
+    X = X.fillna(0)
+
+    # Encode all object-type columns (e.g., gender, symptoms)
+    for col in X.select_dtypes(include=["object"]).columns:
+        le = LabelEncoder()
+        X[col] = le.fit_transform(X[col].astype(str))
+
+    # Ensure proper format
+    X = pd.DataFrame(X)
+    y = pd.Series(y)
+
+    # Apply RandomOverSampler
     ros = RandomOverSampler(random_state=42)
     X_resampled, y_resampled = ros.fit_resample(X, y)
 
-    if 'gender' in X_resampled.columns:
-        le = LabelEncoder()
-        X_resampled['gender'] = le.fit_transform(X_resampled['gender'])
-
-    X_resampled = X_resampled.fillna(0)
     return X_resampled, y_resampled, encoder, X.columns.values
 
-# Train models
+# 🚀 Train models
 @st.cache_resource
 def train_models(X, y):
     rf_model = RandomForestClassifier()
@@ -41,7 +54,7 @@ def train_models(X, y):
 
     return rf_model, nb_model, svm_model
 
-# Prediction function
+# 🔍 Prediction function
 def predict_disease(symptom_input, rf_model, nb_model, svm_model, encoder, symptom_index):
     input_data = [0] * len(symptom_index)
     for symptom in symptom_input:
@@ -56,7 +69,7 @@ def predict_disease(symptom_input, rf_model, nb_model, svm_model, encoder, sympt
 
     return rf_pred, nb_pred, svm_pred, final_pred
 
-# 🎯 Streamlit UI
+# 🌐 Streamlit UI
 st.set_page_config(page_title="Disease Predictor", layout="centered")
 st.title("🧠 Disease Prediction App")
 st.write("Enter symptoms below to predict the most likely disease.")

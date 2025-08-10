@@ -25,14 +25,18 @@ def load_data():
     # Handle missing values
     X = X.fillna(0)
 
-    # Encode all object-type columns (e.g., gender, symptoms)
+    # Encode all object-type columns
     for col in X.select_dtypes(include=["object"]).columns:
         le = LabelEncoder()
         X[col] = le.fit_transform(X[col].astype(str))
 
-    # Ensure proper format
+    # ✅ Ensure X is a DataFrame and y is a Series
     X = pd.DataFrame(X)
     y = pd.Series(y)
+
+    # ✅ Check shapes before resampling
+    if len(X.shape) != 2 or X.shape[0] != len(y):
+        raise ValueError(f"Invalid shapes: X={X.shape}, y={y.shape}")
 
     # Apply RandomOverSampler
     ros = RandomOverSampler(random_state=42)
@@ -92,3 +96,4 @@ if st.button("Predict"):
     st.write(f"**Naive Bayes:** {nb_pred}")
     st.write(f"**SVM:** {svm_pred}")
     st.success(f"**Final Ensemble Prediction:** ✅ {final_pred}")
+
